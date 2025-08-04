@@ -1,0 +1,34 @@
+- name: Configure Database Schema
+  hosts: app      # <-- We are targeting the app server
+  become: yes     # <-- We need sudo for installing packages
+
+  tasks:
+    - name: Create schema.sql file on the app server
+      copy:
+        dest: "/tmp/schema.sql"
+        content: |
+          CREATE TABLE IF NOT EXISTS users (
+              id INT AUTO_INCREMENT PRIMARY KEY,
+              name VARCHAR(255) NOT NULL,
+              email VARCHAR(255) NOT NULL,
+              registration_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+          );
+
+    - name: Install MySQL dependencies on the app server
+      apt:
+        name:
+          - python3-pymysql  # Library for Ansible to talk to MySQL
+          - mysql-client     # The command-line tool needed by the module
+        state: present
+        update_cache: yes
+
+    - name: Create the 'users' table in the database
+      community.mysql.mysql_db:
+        # These variables are now directly available on the app host
+        login_host: "{{ db_endpoint.split(':')[0] }}"
+        login_port: 3306
+        login_user: "{{ db_user }}"
+        login_password: "{{ db_pass }}"
+        name: "{{ db_name }}"
+        state: import
+        target: /tmp/schema.sql

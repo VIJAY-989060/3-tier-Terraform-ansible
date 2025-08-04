@@ -1,0 +1,11 @@
+# Terraform local state and modules
+.terraform/
+terraform.tfstate
+terraform.tfstate.backup
+*.tfvars
+
+# Ansible local files
+ansible/inventory.ini
+
+# SSH Keys
+*.pem

@@ -1,0 +1,32 @@
+- name: Configure App Tier (Nginx + PHP-FPM)
+  hosts: app
+  become: yes
+  tasks:
+    - name: Update apt cache and install packages
+      apt:
+        name: ['nginx', 'php-fpm', 'php-mysql']
+        state: present
+        update_cache: yes
+    - name: Get installed PHP version
+      shell: php -r 'echo PHP_MAJOR_VERSION.".".PHP_MINOR_VERSION;'
+      register: php_version
+      changed_when: false
+    - name: Copy PHP script
+      template:
+        src: files/submit.php
+        dest: /var/www/html/submit.php
+    - name: Configure Nginx for PHP
+      template:
+        src: templates/app_nginx.conf.j2
+        dest: /etc/nginx/sites-available/default
+      notify: Restart Nginx
+    - name: Start and enable PHP-FPM
+      service:
+        name: "php{{ php_version.stdout }}-fpm"
+        state: started
+        enabled: yes
+  handlers:
+    - name: Restart Nginx
+      service:
+        name: nginx
+        state: restarted
